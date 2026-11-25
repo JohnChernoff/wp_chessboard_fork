@@ -8,8 +8,9 @@ class AnimatedPieceWrap extends StatefulWidget {
   final StateEntry stateEntry;
   final double squareSize;
   final bool animated;
+  final int aniMillis;
 
-  const AnimatedPieceWrap({Key? key, required this.child, required this.stateEntry, required this.squareSize, required this.animated}) : super(key: key);
+  const AnimatedPieceWrap({Key? key, required this.child, required this.stateEntry, required this.squareSize, required this.animated, this.aniMillis = 200}) : super(key: key);
 
   @override
   State<AnimatedPieceWrap> createState() => _AnimatedPieceWrapState();
@@ -52,10 +53,61 @@ class _AnimatedPieceWrapState extends State<AnimatedPieceWrap> {
     return AnimatedPositioned(
       key: Key(widget.stateEntry.getKey() + "_a"),
       curve: Curves.easeInOut,
-      duration: const Duration(milliseconds: 200),
+      duration: Duration(milliseconds: widget.aniMillis),
       bottom: bottom,
       left: left,
       child: widget.child
+    );
+  }
+}
+
+class CapturedPieceWrap extends StatefulWidget {
+  final Widget child;
+  final int aniMillis;
+  final int rank;
+  final int file;
+
+  const CapturedPieceWrap({
+    super.key,
+    required this.child,
+    required this.aniMillis,
+    required this.rank,
+    required this.file,
+  });
+
+  @override
+  State<CapturedPieceWrap> createState() => _CapturedPieceWrapState();
+}
+
+class _CapturedPieceWrapState extends State<CapturedPieceWrap>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: widget.aniMillis),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: widget.file * widget.aniMillis.toDouble() * 0, // placeholder
+      bottom: 0,
+      child: FadeTransition(
+        opacity: ReverseAnimation(_controller),
+        child: widget.child,
+      ),
     );
   }
 }

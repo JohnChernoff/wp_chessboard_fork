@@ -171,21 +171,12 @@ class _MyAppState extends State<MyApp> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 WPChessboard(
+                  pieceSpeed: 5000,
                   size: size,
                   orientation: orienatation,
                   squareBuilder: squareBuilder,
                   controller: controller,
-                  // Dont pass any onPieceDrop handler to disable drag and drop
-                  onPieceDrop: onPieceDrop,
-                  onPieceTap: onPieceTap,
-                  onPieceStartDrag: onPieceStartDrag,
-                  onEmptyFieldTap: onEmptyFieldTap,
-                  turnTopPlayerPieces: false,
-                  ghostOnDrag: true,
-                  dropIndicator: DropIndicatorArgs(
-                    size: size / 2,
-                    color: Colors.lightBlue.withOpacity(0.24)
-                  ),
+
                   shortcuts: ShortcutArgs(commitMode: commitMode),
                   pieceMap: PieceMap(
                     K: (size) => WhiteKing(size: size),
@@ -228,6 +219,12 @@ class _MyAppState extends State<MyApp> {
                   child: Text(
                     "Commit mode: ${commitMode == ShortcutCommitMode.auto ? 'auto' : 'space'}",
                   ),
+                ),
+                TextButton(
+                    onPressed: () {
+                      controller.setFen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+                    },
+                    child: const Text("Move")
                 )
               ],
             );

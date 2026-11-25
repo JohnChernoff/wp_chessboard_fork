@@ -15,6 +15,7 @@ export 'package:wp_chessboard/models/piece_square_args.dart';
 export 'package:wp_chessboard/components/hints/move_hint.dart';
 export 'package:wp_chessboard/components/shortcuts/shortcut_highlight.dart';
 
+import 'package:chess_vectors_flutter/chess_vectors_flutter.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -51,16 +52,33 @@ class WPChessboard extends StatefulWidget {
   final bool turnTopPlayerPieces;
   final DropIndicatorArgs? dropIndicator;
   final ShortcutArgs? shortcuts;
-
+  final int pieceSpeed;
   /// Draws the piece on a square in place of the [pieceMap] art. Returning null
   /// draws the [pieceMap] art. Without it the board is unchanged.
   final SquarePieceBuilder? pieceBuilder;
 
 
-  const WPChessboard({Key? key, required this.size, required this.squareBuilder, required this.pieceMap, required this.controller, this.onPieceTap, this.onPieceDrop, this.onEmptyFieldTap, this.onPieceStartDrag, this.orientation = BoardOrientation.white, this.ghostOnDrag = false, this.dropIndicator, this.turnTopPlayerPieces = false, this.shortcuts, this.pieceBuilder}) : super(key: key);
+  const WPChessboard({Key? key, required this.size, required this.squareBuilder, required this.pieceMap, required this.controller, this.onPieceTap, this.onPieceDrop, this.onEmptyFieldTap,
+    this.onPieceStartDrag, this.orientation = BoardOrientation.white, this.ghostOnDrag = false, this.dropIndicator, this.turnTopPlayerPieces = false, this.shortcuts, this.pieceBuilder,
+  this.pieceSpeed = 200}) : super(key: key);
 
   @override
   State<WPChessboard> createState() => _WPChessboardState();
+
+  static PieceMap get defPieceMap => PieceMap(
+    K: (size) => WhiteKing(size: size),
+    Q: (size) => WhiteQueen(size: size),
+    B: (size) => WhiteBishop(size: size),
+    N: (size) => WhiteKnight(size: size),
+    R: (size) => WhiteRook(size: size),
+    P: (size) => WhitePawn(size: size),
+    k: (size) => BlackKing(size: size),
+    q: (size) => BlackQueen(size: size),
+    b: (size) => BlackBishop(size: size),
+    n: (size) => BlackKnight(size: size),
+    r: (size) => BlackRook(size: size),
+    p: (size) => BlackPawn(size: size),
+  );
 }
 
 class _WPChessboardState extends State<WPChessboard> {
@@ -260,7 +278,8 @@ class _WPChessboardState extends State<WPChessboard> {
                 disableDrag: widget.onPieceDrop == null,
                 ghostOnDrag: widget.ghostOnDrag,
                 onEmptyFieldTap: wrappedEmptyFieldTap,
-                animated: widget.controller.shouldAnimate
+                animated: widget.controller.shouldAnimate,
+                aniMillis: widget.pieceSpeed,
               ),
             ),
 
@@ -354,3 +373,21 @@ class WPChessboardController extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+Widget defSquareBuilder(SquareInfo info) {
+  Color fieldColor = (info.index + info.rank) % 2 == 0 ? Colors.grey.shade200 : Colors.grey.shade600;
+  Color overlayColor = Colors.transparent;
+
+  return Container(
+      color: fieldColor,
+      width: info.size,
+      height: info.size,
+      child: AnimatedContainer(
+        color: overlayColor,
+        width: info.size,
+        height: info.size,
+        duration: const Duration(milliseconds: 200),
+      )
+  );
+}
+

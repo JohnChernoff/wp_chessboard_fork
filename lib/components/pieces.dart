@@ -21,8 +21,11 @@ class Pieces extends StatelessWidget {
   final bool disableDrag;
   final bool ghostOnDrag;
   final bool turnTopPlayerPieces;
+  final int aniMillis;
 
-  const Pieces({Key? key, required this.size, required this.pieceMap, this.pieceBuilder, required this.state, this.onPieceTap, this.onEmptyFieldTap, this.onPieceStartDrag, required this.animated, required this.orientation, required this.disableDrag, required this.ghostOnDrag, required this.turnTopPlayerPieces}) : super(key: key);
+  const Pieces({Key? key, required this.size, required this.pieceMap, this.pieceBuilder, required this.state, this.onPieceTap, this.onEmptyFieldTap,
+    this.onPieceStartDrag, required this.animated, required this.orientation, required this.disableDrag, required this.ghostOnDrag, required this.turnTopPlayerPieces,
+  this.aniMillis = 200}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +58,7 @@ class Pieces extends StatelessWidget {
         continue;
       }
 
-      bool isBlackPiece = pieceEntry.piece.toLowerCase() == pieceEntry.piece;
-      bool shouldTurnPiece = turnTopPlayerPieces && (
-        (orientation == BoardOrientation.black && !isBlackPiece)
-        || (orientation == BoardOrientation.white && isBlackPiece)
-      );
-      int quarterTurns = ((orientation == BoardOrientation.black) ? 2 : 0) + (shouldTurnPiece ? 2 : 0);
+      int quarterTurns = getQuarterTurns(pieceEntry.piece.toLowerCase() == pieceEntry.piece);
 
       Widget pieceWidget = pieceMap.get(pieceEntry.piece)(squareSize);
       Widget feedbackWidget = pieceWidget;
@@ -104,6 +102,7 @@ class Pieces extends StatelessWidget {
         squareSize: squareSize,
         stateEntry: pieceEntry,
         animated: animated && !ownsTravel,
+        aniMillis: aniMillis,
         child: GestureDetector(
           onTapDown: onPieceTap != null ? (_) => onPieceTap!(info, pieceEntry.piece) : null,
           child: RotatedBox(
@@ -121,7 +120,81 @@ class Pieces extends StatelessWidget {
       (ownsTravel ? travelling : still).add(wrapped);
     }
 
-    return Stack(children: [...still, ...travelling]);
+    final List<Widget> disappearing = [];
+
+    if (animated && state.last != null) {
+      // First identify the source squares of all pieces that moved.
+      final Set<String> movedFrom = {};
+
+      for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+          final entry = state.board[rank]![file]!;
+
+          if (entry.piece == "") continue;
+
+          final from = entry.lastPosition();
+
+          if (from != null) {
+            movedFrom.add('${from.rank},${from.file}');
+          }
+        }
+      }
+
+      // Now find old pieces that disappeared without moving.
+      // These are captured pieces.
+      for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+          final oldPiece = state.last!.board[rank]![file]!.piece;
+          final newPiece = state.board[rank]![file]!.piece;
+
+          if (oldPiece == "" ||
+              oldPiece == newPiece ||
+              movedFrom.contains('$rank,$file')) {
+            continue;
+          }
+
+          final bool isBlack = oldPiece.toLowerCase() == oldPiece;
+
+          disappearing.add(
+            Positioned(
+              left: file * squareSize,
+              bottom: rank * squareSize,
+              child: TweenAnimationBuilder<double>(
+                key: ValueKey('captured_${state.fen}_$rank$file'),
+                tween: Tween(begin: 1.0, end: 0.0),
+                duration: Duration(milliseconds: aniMillis),
+                builder: (context, opacity, child) {
+                  return Opacity(
+                    opacity: opacity,
+                    child: child,
+                  );
+                },
+                child: RotatedBox(
+                  quarterTurns: getQuarterTurns(isBlack),
+                  child: pieceMap.get(oldPiece)(squareSize),
+                ),
+              ),
+            ),
+          );
+        }
+      }
+    }
+
+    return Stack(
+      children: [
+        ...disappearing,
+        ...still,
+        ...travelling,
+      ],
+    );
+  }
+
+  int getQuarterTurns(bool isBlackPiece) {
+    bool shouldTurnPiece = turnTopPlayerPieces && (
+        (orientation == BoardOrientation.black && !isBlackPiece)
+            || (orientation == BoardOrientation.white && isBlackPiece)
+    );
+    return ((orientation == BoardOrientation.black) ? 2 : 0) + (shouldTurnPiece ? 2 : 0);
   }
 
 }
